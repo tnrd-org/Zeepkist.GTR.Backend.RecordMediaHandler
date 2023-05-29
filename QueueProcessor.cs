@@ -44,7 +44,7 @@ internal class QueueProcessor : IHostedService
             IServiceScope scope = serviceProvider.CreateScope();
             scopes.Add(scope);
 
-            tasks.Add(ProcessQueue(scope.ServiceProvider, cancellationToken));
+            tasks.Add(ProcessQueue(scope.ServiceProvider, cts.Token));
             await Task.Delay(250, cancellationToken);
         }
     }
