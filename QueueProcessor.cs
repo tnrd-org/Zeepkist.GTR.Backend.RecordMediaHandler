@@ -1,6 +1,7 @@
 ﻿using FluentResults;
 using Microsoft.EntityFrameworkCore;
 using TNRD.Zeepkist.GTR.Backend.RecordMediaHandler.Google;
+using TNRD.Zeepkist.GTR.Backend.RecordMediaHandler.Rabbit;
 using TNRD.Zeepkist.GTR.Database;
 using TNRD.Zeepkist.GTR.Database.Models;
 using TNRD.Zeepkist.GTR.DTOs.Rabbit;
@@ -12,6 +13,7 @@ internal class QueueProcessor : IHostedService
     private readonly MediaQueue mediaQueue;
     private readonly IGoogleUploadService uploadService;
     private readonly IServiceProvider serviceProvider;
+    private readonly IRabbitPublisher publisher;
     private readonly ILogger<QueueProcessor> logger;
 
     private readonly CancellationTokenSource cts;
@@ -22,13 +24,15 @@ internal class QueueProcessor : IHostedService
         MediaQueue mediaQueue,
         IGoogleUploadService uploadService,
         IServiceProvider serviceProvider,
-        ILogger<QueueProcessor> logger
+        ILogger<QueueProcessor> logger,
+        IRabbitPublisher publisher
     )
     {
         this.mediaQueue = mediaQueue;
         this.uploadService = uploadService;
         this.serviceProvider = serviceProvider;
         this.logger = logger;
+        this.publisher = publisher;
 
         cts = new CancellationTokenSource();
         scopes = new List<IServiceScope>();
@@ -105,6 +109,13 @@ internal class QueueProcessor : IHostedService
             record.ScreenshotUrl = uploadScreenshot.Result.Value;
 
             await context.SaveChangesAsync(CancellationToken.None);
+
+            publisher.Publish("records",
+                new RecordId
+                {
+                    Id = record.Id
+                });
+
             ms = rnd.Next(10, 100);
 
             DELAY:
