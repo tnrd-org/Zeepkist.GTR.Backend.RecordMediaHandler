@@ -17,17 +17,30 @@ internal class MediaQueue
     public void AddToQueue(UploadRecordMediaRequest item)
     {
         resetEvent.WaitOne();
-        items.Enqueue(item);
-        resetEvent.Set();
+        try
+        {
+            items.Enqueue(item);
+        }
+        finally
+        {
+            resetEvent.Set();
+        }
     }
 
     public Result<UploadRecordMediaRequest> GetItemFromQueue()
     {
         resetEvent.WaitOne();
-        Result<UploadRecordMediaRequest> result = items.TryDequeue(out UploadRecordMediaRequest? item)
-            ? Result.Ok(item)
-            : Result.Fail("Failed to dequeue");
-        resetEvent.Set();
-        return result;
+        try
+        {
+            Result<UploadRecordMediaRequest> result = items.TryDequeue(out UploadRecordMediaRequest? item)
+                ? Result.Ok(item)
+                : Result.Fail("Failed to dequeue");
+
+            return result;
+        }
+        finally
+        {
+            resetEvent.Set();
+        }
     }
 }
