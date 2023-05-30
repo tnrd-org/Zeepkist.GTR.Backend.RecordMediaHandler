@@ -8,7 +8,7 @@ IHost host = Host.CreateDefaultBuilder(args)
     .UseSerilog((context, configuration) =>
     {
         configuration
-            .MinimumLevel.Debug()
+            .MinimumLevel.Information()
             .WriteTo.Console();
     })
     .ConfigureServices((context, services) =>
@@ -19,6 +19,7 @@ IHost host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<IGoogleUploadService, CloudStorageUploadService>();
 
         services.Configure<RabbitOptions>(context.Configuration.GetSection("Rabbit"));
+        services.AddSingleton<IRabbitPublisher, RabbitPublisher>();
         services.AddHostedService<RabbitWorker>();
 
         services.AddNpgsql<GTRContext>(context.Configuration["Database:ConnectionString"]);
