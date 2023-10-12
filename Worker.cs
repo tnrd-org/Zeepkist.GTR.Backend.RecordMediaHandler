@@ -20,23 +20,32 @@ internal class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await Task.Delay(1000, stoppingToken);
+
         while (!stoppingToken.IsCancellationRequested)
         {
-            List<UploadRecordMediaRequest> items = itemQueue.GetItemsFromQueue();
-            List<Task> tasks = new();
-
-            foreach (UploadRecordMediaRequest request in items)
+            try
             {
-                Task task = Task.Run(async () => { await StartJob(request, stoppingToken); }, stoppingToken);
-                tasks.Add(task);
+                List<UploadRecordMediaRequest> items = itemQueue.GetItemsFromQueue();
+                List<Task> tasks = new();
+
+                foreach (UploadRecordMediaRequest request in items)
+                {
+                    Task task = Task.Run(async () => { await StartJob(request, stoppingToken); }, stoppingToken);
+                    tasks.Add(task);
+                }
+
+                await Task.WhenAll(tasks);
+
+                if (!itemQueue.HasItems())
+                {
+                    logger.LogInformation("No more items in queue, waiting for new items");
+                    await Task.Delay(1000, stoppingToken);
+                }
             }
-
-            await Task.WhenAll(tasks);
-
-            if (!itemQueue.HasItems())
+            catch (Exception e)
             {
-                logger.LogInformation("No more items in queue, waiting for new items");
-                await Task.Delay(1000, stoppingToken);
+                logger.LogCritical(e, "Error occurred while processing media upload");
             }
         }
     }
@@ -64,7 +73,7 @@ internal class Worker : BackgroundService
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error occurred while processing personal best");
+            logger.LogError(ex, "Error occurred while processing media upload");
         }
         finally
         {
