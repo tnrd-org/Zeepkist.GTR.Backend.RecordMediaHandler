@@ -36,7 +36,7 @@ internal class Worker : BackgroundService
             }
 
             logger.LogInformation("Delaying for 1 second");
-            await Task.Delay(100, stoppingToken);
+            await Task.Delay(1000, stoppingToken);
         }
     }
 
