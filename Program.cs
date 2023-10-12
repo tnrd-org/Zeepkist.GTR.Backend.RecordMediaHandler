@@ -13,18 +13,17 @@ IHost host = Host.CreateDefaultBuilder(args)
     })
     .ConfigureServices((context, services) =>
     {
-        services.AddHostedService<QueueProcessor>();
+        services.AddHostedService<Worker>();
 
         services.Configure<GoogleOptions>(context.Configuration.GetSection("Google"));
         services.AddSingleton<IGoogleUploadService, CloudStorageUploadService>();
 
         services.Configure<RabbitOptions>(context.Configuration.GetSection("Rabbit"));
-        services.AddSingleton<IRabbitPublisher, RabbitPublisher>();
         services.AddHostedService<RabbitWorker>();
 
         services.AddNpgsql<GTRContext>(context.Configuration["Database:ConnectionString"]);
 
-        services.AddSingleton<MediaQueue>();
+        services.AddSingleton<ItemQueue>();
     })
     .Build();
 

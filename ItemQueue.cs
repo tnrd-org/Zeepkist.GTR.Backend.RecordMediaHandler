@@ -4,14 +4,23 @@ using TNRD.Zeepkist.GTR.DTOs.Rabbit;
 
 namespace TNRD.Zeepkist.GTR.Backend.RecordMediaHandler;
 
-internal class MediaQueue
+internal class ItemQueue
 {
     private readonly AutoResetEvent resetEvent = new(true);
-    private readonly ConcurrentQueue<UploadRecordMediaRequest> items = new();
+    private readonly List<UploadRecordMediaRequest> items = new();
 
     public bool HasItems()
     {
-        return !items.IsEmpty;
+        resetEvent.WaitOne();
+
+        try
+        {
+            return items.Count > 0;
+        }
+        finally
+        {
+            resetEvent.Reset();
+        }
     }
 
     public void AddToQueue(UploadRecordMediaRequest item)
@@ -19,7 +28,7 @@ internal class MediaQueue
         resetEvent.WaitOne();
         try
         {
-            items.Enqueue(item);
+            items.Add(item);
         }
         finally
         {
@@ -27,16 +36,15 @@ internal class MediaQueue
         }
     }
 
-    public Result<UploadRecordMediaRequest> GetItemFromQueue()
+    public List<UploadRecordMediaRequest> GetItemsFromQueue()
     {
         resetEvent.WaitOne();
+
         try
         {
-            Result<UploadRecordMediaRequest> result = items.TryDequeue(out UploadRecordMediaRequest? item)
-                ? Result.Ok(item)
-                : Result.Fail("Failed to dequeue");
-
-            return result;
+            List<UploadRecordMediaRequest> copy = items.ToList();
+            items.Clear();
+            return copy;
         }
         finally
         {
