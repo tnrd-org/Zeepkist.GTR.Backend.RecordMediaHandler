@@ -8,7 +8,10 @@ IHost host = Host.CreateDefaultBuilder(args)
     .UseSerilog((context, configuration) =>
     {
         configuration
-            .MinimumLevel.Information()
+            .Enrich.FromLogContext()
+            .Enrich.WithProperty("Source", "MediaProcessor")
+            .MinimumLevel.Debug()
+            .WriteTo.Seq(context.Configuration["Seq:Url"], apiKey: context.Configuration["Seq:Key"])
             .WriteTo.Console();
     })
     .ConfigureServices((context, services) =>
