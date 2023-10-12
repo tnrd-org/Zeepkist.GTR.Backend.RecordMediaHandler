@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-using FluentResults;
-using TNRD.Zeepkist.GTR.DTOs.Rabbit;
+﻿using TNRD.Zeepkist.GTR.DTOs.Rabbit;
 
 namespace TNRD.Zeepkist.GTR.Backend.RecordMediaHandler;
 
@@ -19,7 +17,7 @@ internal class ItemQueue
         }
         finally
         {
-            resetEvent.Reset();
+            resetEvent.Set();
         }
     }
 
