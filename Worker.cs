@@ -24,30 +24,34 @@ internal class Worker : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            try
+            logger.LogInformation("Starting iteration");
+
+            if (itemQueue.HasItems())
             {
-                List<UploadRecordMediaRequest> items = itemQueue.GetItemsFromQueue();
-                List<Task> tasks = new();
-
-                foreach (UploadRecordMediaRequest request in items)
-                {
-                    Task task = Task.Run(async () => { await StartJob(request, stoppingToken); }, stoppingToken);
-                    tasks.Add(task);
-                }
-
-                await Task.WhenAll(tasks);
-
-                if (!itemQueue.HasItems())
-                {
-                    logger.LogInformation("No more items in queue, waiting for new items");
-                    await Task.Delay(1000, stoppingToken);
-                }
+                await ProcessQueue(stoppingToken);
             }
-            catch (Exception e)
+            else
             {
-                logger.LogCritical(e, "Error occurred while processing media upload");
+                logger.LogInformation("No items in queue");
             }
+
+            logger.LogInformation("Delaying for 1 second");
+            await Task.Delay(100, stoppingToken);
         }
+    }
+
+    private async Task ProcessQueue(CancellationToken stoppingToken)
+    {
+        List<UploadRecordMediaRequest> items = itemQueue.GetItemsFromQueue();
+        List<Task> tasks = new();
+
+        foreach (UploadRecordMediaRequest request in items)
+        {
+            Task task = Task.Run(async () => { await StartJob(request, stoppingToken); }, stoppingToken);
+            tasks.Add(task);
+        }
+
+        await Task.WhenAll(tasks);
     }
 
     private async Task StartJob(UploadRecordMediaRequest request, CancellationToken stoppingToken)
